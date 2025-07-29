@@ -1,0 +1,209 @@
+#usda 1.0
+(
+	#FalconEditorCompatible
+    "Scenario definition"
+    defaultPrim = "Simulation"
+    upAxis = "Z"
+)
+
+def Scope "Simulation"
+{
+	string PythonClass = "UGVDemo"
+	string PythonModule = "UGVDemo"
+	asset[] PythonPath = [@./@, @../../Twins/@]
+
+	def Scope "World"
+	{
+
+		def dtEncapsulation "Downtown_0"
+		(
+			references = @../../Twins/Downtown/Downtown.usda@
+		)
+		{
+			double3 xformOp:translate = (0.0, 0.0, 0.0)
+			double3 xformOp:rotateXYZ = (0.0, 0.0, 0.0)
+			double3 xformOp:scale = (1.0, 1.0, 1.0)
+			token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ", "xformOp:scale"]
+		}
+
+		def dtEncapsulation "GenericWidget01_0"
+		(
+			references = @../../Twins/GenericWidget01/GenericWidget01.usda@
+		)
+		{
+			double3 xformOp:translate = (1290.995419, -496.665364, 1.124996)
+			double3 xformOp:rotateXYZ = (0.0, 0.0, 0.0)
+			double3 xformOp:scale = (1.0, 1.0, 1.0)
+			token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ", "xformOp:scale"]
+		}
+	}
+
+	def Scope "Characters"
+	{
+
+		def dtEncapsulation "UGV1_0"
+		(
+			references = @../../Twins/UGV1/UGV1.usda@
+		)
+		{
+			double3 xformOp:translate = (280.0, 180.0, 0.0)
+			double3 xformOp:rotateXYZ = (0.0, 0.0, 89.99999930282699)
+			double3 xformOp:scale = (0.9999999999999996, 0.9999999999999996, 1.0)
+			token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ", "xformOp:scale"]
+
+            def IMUSensor "IMUSensor_BP_C_0"
+            {
+                double pe:Rate = 200.0
+                bool pe:UseBodyFrame = true
+                bool bRos2 = true
+                bool bRosPublishOdometry = true
+                bool bRosPublishTwist = true
+                string RosTopic = "/original_imu"
+                string ActorLabel = "IMUSensor"
+                
+            string pe:FrameID = "IMUSensor_BP_C_0"
+            string pe:ParentFrameID = "map"
+        
+
+                double3 xformOp:translate = (10.0, 0.0, 20.0)
+                double3 xformOp:rotateXYZ = (0.0, 0.0, 0.0)
+                double3 xformOp:scale = (1.0, 1.0, 1.0)
+                uniform token[] xformOpOrder = ["xformOp:translate","xformOp:rotateXYZ", "xformOp:scale"]
+            }
+
+            def CaptureSensor "CaptureSensorLidar_BP_C_0"
+            {
+                bool WorldPosition = true
+                double pe:Rate = 20.0
+                bool pe:bLidarMode = true
+                string pe:LidarResolutionPreset = "High"
+                bool pe:bLidarForceSingleFrameCapture = false
+                double[] pe:LidarDistanceRangeCm = [0.0, 5000.0]
+                double[] pe:LidarAzimuthRangeDeg = [-180.0, 180.0]
+                double[] pe:LidarElevationRangeDeg = [-15.0, 15.0]
+                int pe:LidarAzimuthSamples = 180
+                int pe:LidarElevationSamples = 16
+                string ActorLabel = "LidarSensor"
+                def SensorComponent "CaptureSensorLidar_BP_C_0_WorldPosition"
+                            {
+                                token pe:Type = "WorldPosition"
+                                string pe:FrameID = "CaptureSensorLidar_BP_C_0_WorldPosition"
+                                string pe:ParentFrameID = "map"
+                                # doesn't do anything for non uint32 types, needed to publish uint32 on ros, and to save it to png
+                                bool pe:bUint32AsUint16 = true
+                            }
+
+                double3 xformOp:translate = (66.0, 0.0, 120.0)
+                double3 xformOp:rotateXYZ = (-0.0, 0.0, -89.99999999999999)
+                double3 xformOp:scale = (1.0, 1.0, 1.0)
+                uniform token[] xformOpOrder = ["xformOp:translate","xformOp:rotateXYZ", "xformOp:scale"]
+            }
+
+            def GPSSensor "GPSSensor_BP_C_0"
+            {
+                double pe:Rate = 10.0
+                bool bRos2 = true
+                string ActorLabel = "GPSSensor_BP0"
+                
+            string pe:FrameID = "GPSSensor_BP_C_0"
+            string pe:ParentFrameID = "map"
+        
+
+                double3 xformOp:translate = (0.0, 0.0, 0.0)
+                double3 xformOp:rotateXYZ = (0.0, 0.0, 0.0)
+                double3 xformOp:scale = (1.0, 1.0, 1.0)
+                uniform token[] xformOpOrder = ["xformOp:translate","xformOp:rotateXYZ", "xformOp:scale"]
+            }
+
+
+        def Pipeline "PipelineRos2Clock"
+        {
+            int pe:NumWorkers = 1
+            def Callback "PublishRos2Clock"
+            {
+                string Topic = "/clock"
+                int QueueSize = 1
+                string pe:Class = "peregrine.pipelines.ros2.callbacks.ROS2ClockPublisher"
+                string NodeName = "clock_publisher_UGV1BP_C_0"
+            }
+        }
+        def Pipeline "PipelineRos2TF"
+        {
+            int pe:NumWorkers = 1
+            def Callback "PublishRos2TF"
+            {
+                rel pe:Sensors = [<../../IMUSensor_BP_C_0>, <../../CaptureSensorLidar_BP_C_0/CaptureSensorLidar_BP_C_0_WorldPosition>, <../../GPSSensor_BP_C_0>]
+                string pe:Class = "peregrine.pipelines.ros2.callbacks.ROS2TransfomPublisher"
+                string NodeName = "tf_publisher_UGV1BP_C_0"
+            }
+        }
+                def Pipeline "PipelineRos2_IMUSensor_BP_C_0"
+                {
+                    int pe:NumWorkers = 1
+                    def Callback "PublishRos2_IMUSensor_BP_C_0"
+                    {
+                        string Topic = "/original_imu"
+                        int QueueSize = 1
+                        string MsgClass = "sensor_msgs.msg.Imu"
+                        rel pe:Sensor = <../../IMUSensor_BP_C_0>
+                        string pe:Class = "peregrine.pipelines.ros2.callbacks.ROS2SensorPublisher"
+                        string NodeName = "IMUSensor_BP_C_0"
+                    }
+                }
+                
+                        def Pipeline "PipelineRos2_IMUSensor_BP_C_0_Odometry"
+                        {
+                            int pe:NumWorkers = 1
+                            def Callback "IMUSensor_BP_C_0_Ros2OdometryPublisher"
+                            {
+                                string Topic = "/original_imu/odometry"
+                                int QueueSize = 1
+                                rel Sensor = <../../IMUSensor_BP_C_0>
+                                string Class = "peregrine.pipelines.ros2.callbacks.ROS2OdometryPublisher"
+                                string NodeName = "IMUSensor_BP_C_0Odom"
+                            }
+                        }
+                        
+                        def Pipeline "PipelineRos2_IMUSensor_BP_C_0_Twist"
+                        {
+                            int pe:NumWorkers = 1
+                            def Callback "IMUSensor_BP_C_0_Ros2TwistPublisher"
+                            {
+                                string Topic = "/original_imu/twist"
+                                int QueueSize = 1
+                                rel Sensor = <../../IMUSensor_BP_C_0>
+                                string Class = "peregrine.pipelines.ros2.callbacks.ROS2TwistPublisher"
+                                string NodeName = "IMUSensor_BP_C_0Twist"
+                            }
+                        }
+                        
+                def Pipeline "PipelineRos2_GPSSensor_BP_C_0"
+                {
+                    int pe:NumWorkers = 1
+                    def Callback "PublishRos2_GPSSensor_BP_C_0"
+                    {
+                        string Topic = "GPSSensor_BP_C_0"
+                        int QueueSize = 1
+                        string MsgClass = "sensor_msgs.msg.NavSatFix"
+                        rel pe:Sensor = <../../GPSSensor_BP_C_0>
+                        string pe:Class = "peregrine.pipelines.ros2.callbacks.ROS2SensorPublisher"
+                        string NodeName = "GPSSensor_BP_C_0"
+                    }
+                }
+                
+		}
+
+		def dtEncapsulation "SUVFalcon_0"
+		(
+			references = @../../Twins/SUVFalcon/SUVFalcon.usda@
+		)
+		{
+			double3 xformOp:translate = (848.572404, -2905.102383, -15.053183000000004)
+			double3 xformOp:rotateXYZ = (-0.0, 0.0, -39.999999690145394)
+			double3 xformOp:scale = (1.0, 1.0, 1.0)
+			token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ", "xformOp:scale"]
+
+
+		}
+	}
+}
